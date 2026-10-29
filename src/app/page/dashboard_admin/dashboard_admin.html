@@ -3,14 +3,23 @@
   <!-- Banner chào mừng -->
   <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-indigo-950 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
     <div>
-      <span class="px-2.5 py-1 bg-amber-400 text-indigo-950 font-bold text-xs rounded-full uppercase tracking-wider">Hệ thống Giám sát</span>
+      <div class="flex items-center gap-2">
+        <span class="px-2.5 py-1 bg-amber-400 text-indigo-950 font-bold text-xs rounded-full uppercase tracking-wider">Hệ thống Giám sát</span>
+        <button 
+          (click)="loadDashboardData()" 
+          title="Làm mới số liệu"
+          class="text-xs text-indigo-300 hover:text-white flex items-center gap-1 cursor-pointer bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-700"
+        >
+          <span [class.animate-spin]="isLoading()">🔄</span> Cập nhật
+        </button>
+      </div>
       <h1 class="text-2xl font-bold mt-2">Bảng điều khiển Trung tâm Quản trị BankManager</h1>
-      <p class="text-indigo-200 text-sm mt-1">Giám sát số dư, lượng giao dịch trong ngày và trạng thái bảo mật của hệ thống.</p>
+      <p class="text-indigo-200 text-sm mt-1">Giám sát số dư, lượng giao dịch trong ngày và trạng thái bảo mật của hệ thống ngân hàng thời gian thực.</p>
     </div>
 
     <div class="flex gap-3">
       <a routerLink="/customers" class="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-bold px-4 py-2 rounded-lg text-sm shadow transition">
-        Xem Khách hàng
+        Quản lý Khách hàng
       </a>
       <a routerLink="/transactions" class="bg-indigo-700 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg text-sm shadow transition">
         Vào Giao dịch
@@ -26,20 +35,20 @@
         <span class="text-xs font-semibold uppercase tracking-wider">Tổng số dư hệ thống</span>
         <span class="p-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm">💰</span>
       </div>
-      <div class="text-2xl font-bold text-slate-800">128.54 Tỷ</div>
+      <div class="text-2xl font-bold text-slate-800">{{ formattedSystemBalance() }}</div>
       <p class="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
-        <span>↑ +4.2%</span> <span class="text-slate-400">so với tháng trước</span>
+        <span>{{ accounts().length }} tài khoản đang lưu hành</span>
       </p>
     </div>
 
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
       <div class="flex items-center justify-between text-slate-500 mb-2">
-        <span class="text-xs font-semibold uppercase tracking-wider">Giao dịch hôm nay</span>
+        <span class="text-xs font-semibold uppercase tracking-wider">Tổng giao dịch</span>
         <span class="p-2 bg-emerald-50 text-emerald-600 rounded-lg text-sm">⚡</span>
       </div>
-      <div class="text-2xl font-bold text-slate-800">3,492 GD</div>
+      <div class="text-2xl font-bold text-slate-800">{{ totalTransactionsCount() }} GD</div>
       <p class="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
-        <span>✓ 99.8%</span> <span class="text-slate-400">thành công</span>
+        <span>✓ {{ successRate() }}</span> <span class="text-slate-400">thành công</span>
       </p>
     </div>
 
@@ -48,9 +57,9 @@
         <span class="text-xs font-semibold uppercase tracking-wider">Khách hàng kích hoạt</span>
         <span class="p-2 bg-amber-50 text-amber-600 rounded-lg text-sm">👥</span>
       </div>
-      <div class="text-2xl font-bold text-slate-800">1,248</div>
+      <div class="text-2xl font-bold text-slate-800">{{ activeCustomersCount() }}</div>
       <p class="text-xs text-indigo-600 font-medium mt-1 flex items-center gap-1">
-        <span>+12</span> <span class="text-slate-400">mở mới tuần này</span>
+        <span>Tổng số: {{ customers().length }} khách hàng</span>
       </p>
     </div>
 
@@ -59,9 +68,11 @@
         <span class="text-xs font-semibold uppercase tracking-wider">Cảnh báo rủi ro</span>
         <span class="p-2 bg-rose-50 text-rose-600 rounded-lg text-sm">🛡️</span>
       </div>
-      <div class="text-2xl font-bold text-rose-600">0 Sự cố</div>
+      <div class="text-2xl font-bold" [class]="lockedAccountsCount() > 0 ? 'text-rose-600' : 'text-slate-800'">
+        {{ lockedAccountsCount() }} TK bị khóa
+      </div>
       <p class="text-xs text-slate-400 font-medium mt-1">
-        Hệ thống an toàn 100%
+        {{ lockedAccountsCount() === 0 ? 'Hệ thống an toàn 100%' : 'Cần kiểm tra trạng thái' }}
       </p>
     </div>
 
@@ -70,10 +81,13 @@
   <!-- Phần Bảng & Hoạt động nhanh -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     
-    <!-- 2 cols: Bảng theo dõi 5 giao dịch mới nhất -->
+    <!-- 2 cols: Bảng theo dõi 6 giao dịch mới nhất -->
     <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-base font-bold text-slate-800">Luồng giao dịch Trực tiếp (Live Transactions)</h2>
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Luồng giao dịch Trực tiếp (Live Transactions)</h2>
+          <p class="text-xs text-slate-400">Giao dịch mới nhất ghi nhận trong Core Banking</p>
+        </div>
         <a routerLink="/transactions" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">Xem tất cả →</a>
       </div>
 
@@ -83,69 +97,88 @@
             <tr>
               <th class="py-2.5 px-3">Mã GD</th>
               <th class="py-2.5 px-3">Loại</th>
+              <th class="py-2.5 px-3">Từ / Đến</th>
               <th class="py-2.5 px-3">Số tiền</th>
               <th class="py-2.5 px-3">Thời gian</th>
               <th class="py-2.5 px-3 text-right">Trạng thái</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            <tr>
-              <td class="py-3 px-3 font-mono font-semibold text-indigo-700">TXN-99882211</td>
-              <td class="py-3 px-3">Chuyển tiền</td>
-              <td class="py-3 px-3 font-bold font-mono text-slate-800">15,000,000 VND</td>
-              <td class="py-3 px-3 text-slate-400">1 phút trước</td>
-              <td class="py-3 px-3 text-right"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">SUCCESS</span></td>
-            </tr>
-            <tr>
-              <td class="py-3 px-3 font-mono font-semibold text-indigo-700">TXN-88776655</td>
-              <td class="py-3 px-3">Nạp tiền</td>
-              <td class="py-3 px-3 font-bold font-mono text-emerald-600">+5,000,000 VND</td>
-              <td class="py-3 px-3 text-slate-400">4 phút trước</td>
-              <td class="py-3 px-3 text-right"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">SUCCESS</span></td>
-            </tr>
-            <tr>
-              <td class="py-3 px-3 font-mono font-semibold text-indigo-700">TXN-77665544</td>
-              <td class="py-3 px-3">Rút tiền</td>
-              <td class="py-3 px-3 font-bold font-mono text-rose-600">-2,000,000 VND</td>
-              <td class="py-3 px-3 text-slate-400">12 phút trước</td>
-              <td class="py-3 px-3 text-right"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">SUCCESS</span></td>
-            </tr>
+            @for (txn of recentTransactions(); track txn.transactionId || txn.refNo) {
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3 px-3 font-mono font-semibold text-indigo-700">{{ txn.refNo }}</td>
+                <td class="py-3 px-3 font-medium">
+                  @if (txn.tranType === 'TRANSFER') {
+                    <span class="text-indigo-600">Chuyển tiền</span>
+                  } @else if (txn.tranType === 'DEPOSIT') {
+                    <span class="text-emerald-600">Nạp tiền</span>
+                  } @else {
+                    <span class="text-rose-600">Rút tiền</span>
+                  }
+                </td>
+                <td class="py-3 px-3 font-mono text-slate-500">
+                  {{ txn.fromAccount }} → {{ txn.toAccount }}
+                </td>
+                <td class="py-3 px-3 font-bold font-mono text-slate-800">
+                  {{ txn.amount | number }} VND
+                </td>
+                <td class="py-3 px-3 text-slate-400">
+                  {{ txn.createAt ? (txn.createAt | date:'dd/MM HH:mm') : '—' }}
+                </td>
+                <td class="py-3 px-3 text-right">
+                  <span class="px-2 py-0.5 rounded font-bold text-[10px]" [class]="txn.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+                    {{ txn.status }}
+                  </span>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="py-8 text-center text-slate-400">
+                  Chưa có giao dịch phát sinh nào trong hệ thống.
+                </td>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- 1 col: Phím tắt hành động cho Giao dịch viên -->
-    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-      <h2 class="text-base font-bold text-slate-800">Thao tác nhanh Quản trị</h2>
-      
-      <div class="space-y-2.5">
-        <a routerLink="/customers" class="w-full flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition group">
-          <div class="flex items-center gap-3">
-            <span class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">👤</span>
-            <div>
-              <p class="text-xs font-bold text-slate-800 group-hover:text-indigo-700">Tạo mới Khách hàng</p>
-              <p class="text-[11px] text-slate-400">Đăng ký thông tin định danh</p>
-            </div>
-          </div>
-          <span class="text-slate-400 group-hover:text-indigo-600 text-xs font-bold">→</span>
-        </a>
+    <!-- 1 col: Top tài khoản số dư lớn nhất & Lối tắt -->
+    <div class="space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <span>🏆</span>
+          <span>Tài khoản Số dư hàng đầu</span>
+        </h2>
 
-        <a routerLink="/transactions" class="w-full flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 transition group">
-          <div class="flex items-center gap-3">
-            <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">💳</span>
-            <div>
-              <p class="text-xs font-bold text-slate-800 group-hover:text-indigo-700">Chuyển tiền nhanh</p>
-              <p class="text-[11px] text-slate-400">Xử lý lệnh chuyển khoản nội bộ</p>
+        <div class="space-y-3">
+          @for (acc of topAccounts(); track acc.accountId) {
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between">
+              <div>
+                <span class="font-mono font-bold text-xs text-slate-800 block">{{ acc.accountNumber }}</span>
+                <span class="text-[10px] text-slate-400 uppercase font-semibold">{{ acc.accountType }}</span>
+              </div>
+              <div class="text-right">
+                <span class="font-mono font-bold text-sm text-indigo-700 block">{{ acc.balance | number }} VND</span>
+                <span class="text-[10px] font-semibold" [class]="acc.accountStatus === 'ACTIVE' ? 'text-emerald-600' : 'text-rose-600'">
+                  {{ acc.accountStatus }}
+                </span>
+              </div>
             </div>
-          </div>
-          <span class="text-slate-400 group-hover:text-indigo-600 text-xs font-bold">→</span>
-        </a>
-
-        <div class="p-3 bg-slate-50 rounded-lg border border-dashed border-slate-300 text-center">
-          <span class="text-xs text-slate-500">Cần hỗ trợ nghiệp vụ Core Banking?</span>
-          <p class="text-xs font-bold text-indigo-900 mt-0.5">Hotline IT nội bộ: Ext 109</p>
+          } @empty {
+            <p class="text-xs text-slate-400 text-center py-4">Chưa có tài khoản nào.</p>
+          }
         </div>
+      </div>
+
+      <!-- Quick Tips Box -->
+      <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 text-amber-900 space-y-2">
+        <h3 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-800">
+          <span>💡</span> Mẹo vận hành hệ thống
+        </h3>
+        <p class="text-xs text-amber-800 leading-relaxed">
+          Quản trị viên có thể kiểm tra danh sách khách hàng và mở tài khoản mới trực tiếp từ mục <strong>Quản lý Khách hàng</strong>, hoặc thực hiện nạp/rút tiền thanh toán tại mục <strong>Giao dịch</strong>.
+        </p>
       </div>
     </div>
 

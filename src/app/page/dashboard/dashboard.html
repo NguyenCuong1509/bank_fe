@@ -3,12 +3,33 @@
   <!-- Tiêu đề trang -->
   <div>
     <h1 class="text-2xl font-bold text-slate-800">Giao dịch & Tài khoản Ngân hàng</h1>
-    <p class="text-sm text-slate-500">Thực hiện nạp tiền, rút tiền, chuyển khoản liên tài khoản và tra cứu lịch sử giao dịch.</p>
+    <p class="text-sm text-slate-500">Thực hiện nạp tiền, rút tiền, chuyển khoản liên tài khoản và tra cứu lịch sử giao dịch trực tiếp.</p>
   </div>
+
+  <!-- Thông báo trạng thái (Alerts) -->
+  @if (successMessage()) {
+    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2 font-medium">
+        <span>✓</span>
+        <span>{{ successMessage() }}</span>
+      </div>
+      <button (click)="clearAlerts()" class="text-emerald-600 hover:text-emerald-900 font-bold cursor-pointer">&times;</button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2 font-medium">
+        <span>⚠</span>
+        <span>{{ errorMessage() }}</span>
+      </div>
+      <button (click)="clearAlerts()" class="text-rose-600 hover:text-rose-900 font-bold cursor-pointer">&times;</button>
+    </div>
+  }
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- Cột bên trái (2 cols): Các Form Thực hiện Giao dịch (Tabs Chuyển tiền / Nạp / Rút) -->
+    <!-- Cột bên trái (1 col): Box Thực hiện Giao dịch & Tra cứu nhanh tài khoản -->
     <div class="lg:col-span-1 space-y-6">
       
       <!-- Box thực hiện giao dịch -->
@@ -20,161 +41,387 @@
 
         <!-- Tab chọn nghiệp vụ -->
         <div class="flex border-b border-slate-200 mb-5 text-xs font-semibold">
-          <button type="button" class="pb-2 px-3 border-b-2 border-indigo-600 text-indigo-600 font-bold">Chuyển tiền</button>
-          <button type="button" class="pb-2 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Nạp tiền</button>
-          <button type="button" class="pb-2 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800">Rút tiền</button>
+          <button 
+            type="button" 
+            (click)="setTab('transfer')"
+            [class]="activeTab() === 'transfer' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'border-b-2 border-transparent text-slate-500 hover:text-slate-800'"
+            class="pb-2 px-3 cursor-pointer transition"
+          >
+            Chuyển tiền
+          </button>
+          <button 
+            type="button" 
+            (click)="setTab('deposit')"
+            [class]="activeTab() === 'deposit' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'border-b-2 border-transparent text-slate-500 hover:text-slate-800'"
+            class="pb-2 px-3 cursor-pointer transition"
+          >
+            Nạp tiền
+          </button>
+          <button 
+            type="button" 
+            (click)="setTab('withdraw')"
+            [class]="activeTab() === 'withdraw' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'border-b-2 border-transparent text-slate-500 hover:text-slate-800'"
+            class="pb-2 px-3 cursor-pointer transition"
+          >
+            Rút tiền
+          </button>
         </div>
 
-        <!-- Form Chuyển tiền (POST /api/transactions/transfer) -->
-        <form class="space-y-4">
-          <div>
-            <label for="fromAccount" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tài khoản nguồn (Từ số TK)</label>
-            <input id="fromAccount" type="text" placeholder="Nhập số TK người gửi..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-          </div>
-
-          <div>
-            <label for="toAccount" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tài khoản đích (Đến số TK)</label>
-            <input id="toAccount" type="text" placeholder="Nhập số TK người nhận..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-          </div>
-
-          <div>
-            <label for="amount" class="block text-xs font-semibold text-slate-600 uppercase mb-1">Số tiền (VND)</label>
-            <div class="relative">
-              <input id="amount" type="number" placeholder="Tối thiểu 1,000" class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-              <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">VND</span>
+        <!-- FORM 1: CHUYỂN TIỀN -->
+        @if (activeTab() === 'transfer') {
+          <form [formGroup]="transferForm" (ngSubmit)="submitTransfer()" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tài khoản nguồn (Từ số TK) *</label>
+              <input 
+                type="text" 
+                formControlName="fromAccount"
+                placeholder="Ví dụ: 1000000002" 
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+              />
+              @if (transferForm.get('fromAccount')?.touched && transferForm.get('fromAccount')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Vui lòng nhập số tài khoản nguồn.</span>
+              }
             </div>
-          </div>
 
-          <button type="submit" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg text-sm shadow transition">
-            Xác nhận Chuyển tiền
-          </button>
-        </form>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tài khoản đích (Đến số TK) *</label>
+              <input 
+                type="text" 
+                formControlName="toAccount"
+                placeholder="Ví dụ: 1000000001" 
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+              />
+              @if (transferForm.get('toAccount')?.touched && transferForm.get('toAccount')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Vui lòng nhập số tài khoản đích.</span>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Số tiền chuyển (VND) *</label>
+              <div class="relative">
+                <input 
+                  type="number" 
+                  formControlName="amount"
+                  placeholder="Tối thiểu 1,000" 
+                  class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+                />
+                <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">VND</span>
+              </div>
+              @if (transferForm.get('amount')?.touched && transferForm.get('amount')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Số tiền chuyển tối thiểu là 1,000 VND.</span>
+              }
+            </div>
+
+            <button 
+              type="submit" 
+              [disabled]="isSubmitting()"
+              class="w-full mt-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-medium py-2.5 rounded-lg text-sm shadow transition cursor-pointer flex items-center justify-center gap-2"
+            >
+              @if (isSubmitting()) {
+                <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Đang xử lý...</span>
+              } @else {
+                <span>Xác nhận Chuyển tiền</span>
+              }
+            </button>
+          </form>
+        }
+
+        <!-- FORM 2: NẠP TIỀN -->
+        @if (activeTab() === 'deposit') {
+          <form [formGroup]="depositForm" (ngSubmit)="submitDeposit()" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Số tài khoản nạp *</label>
+              <input 
+                type="text" 
+                formControlName="accountNumber"
+                placeholder="Ví dụ: 1000000001" 
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+              />
+              @if (depositForm.get('accountNumber')?.touched && depositForm.get('accountNumber')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Vui lòng nhập số tài khoản nhận tiền nạp.</span>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Số tiền nạp (VND) *</label>
+              <div class="relative">
+                <input 
+                  type="number" 
+                  formControlName="amount"
+                  placeholder="Tối thiểu 1,000" 
+                  class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+                />
+                <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">VND</span>
+              </div>
+              @if (depositForm.get('amount')?.touched && depositForm.get('amount')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Số tiền nạp tối thiểu là 1,000 VND.</span>
+              }
+            </div>
+
+            <button 
+              type="submit" 
+              [disabled]="isSubmitting()"
+              class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-medium py-2.5 rounded-lg text-sm shadow transition cursor-pointer flex items-center justify-center gap-2"
+            >
+              @if (isSubmitting()) {
+                <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Đang xử lý...</span>
+              } @else {
+                <span>Xác nhận Nạp tiền</span>
+              }
+            </button>
+          </form>
+        }
+
+        <!-- FORM 3: RÚT TIỀN -->
+        @if (activeTab() === 'withdraw') {
+          <form [formGroup]="withdrawForm" (ngSubmit)="submitWithdraw()" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Số tài khoản rút *</label>
+              <input 
+                type="text" 
+                formControlName="accountNumber"
+                placeholder="Ví dụ: 1000000002" 
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" 
+              />
+              @if (withdrawForm.get('accountNumber')?.touched && withdrawForm.get('accountNumber')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Vui lòng nhập số tài khoản cần rút tiền.</span>
+              }
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Số tiền rút (VND) *</label>
+              <div class="relative">
+                <input 
+                  type="number" 
+                  formControlName="amount"
+                  placeholder="Tối thiểu 1,000" 
+                  class="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-lg text-sm font-semibold text-rose-700 focus:ring-2 focus:ring-rose-500 focus:outline-none" 
+                />
+                <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">VND</span>
+              </div>
+              @if (withdrawForm.get('amount')?.touched && withdrawForm.get('amount')?.invalid) {
+                <span class="text-xs text-rose-600 mt-1 block">Số tiền rút tối thiểu là 1,000 VND.</span>
+              }
+            </div>
+
+            <button 
+              type="submit" 
+              [disabled]="isSubmitting()"
+              class="w-full mt-2 bg-rose-600 hover:bg-rose-700 disabled:bg-rose-300 text-white font-medium py-2.5 rounded-lg text-sm shadow transition cursor-pointer flex items-center justify-center gap-2"
+            >
+              @if (isSubmitting()) {
+                <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Đang xử lý...</span>
+              } @else {
+                <span>Xác nhận Rút tiền</span>
+              }
+            </button>
+          </form>
+        }
       </div>
 
-      <!-- Box Tra cứu nhanh tài khoản (GET /api/accounts/{id}) -->
+      <!-- Box Tra cứu nhanh tài khoản (GET /api/accounts/number/{accountNumber}) -->
       <div class="bg-indigo-900 text-white p-6 rounded-xl shadow-md space-y-3">
         <h3 class="font-bold text-sm text-indigo-200 uppercase tracking-wider">Tra cứu số dư tài khoản</h3>
         <div class="flex gap-2">
-          <input type="text" placeholder="Nhập ID tài khoản..." class="flex-1 px-3 py-1.5 rounded-lg bg-indigo-950/70 text-white border border-indigo-700 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono" />
-          <button type="button" class="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-bold px-3 py-1.5 rounded-lg text-xs transition">
-            Tra cứu
+          <input 
+            type="text" 
+            [value]="lookupInput()"
+            (input)="lookupInput.set($any($event.target).value)"
+            (keyup.enter)="lookupAccount()"
+            placeholder="Nhập Số TK hoặc ID..." 
+            class="flex-1 px-3 py-1.5 rounded-lg bg-indigo-950/70 text-white border border-indigo-700 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono" 
+          />
+          <button 
+            type="button" 
+            (click)="lookupAccount()"
+            class="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer"
+          >
+            @if (isLookingUpAccount()) {
+              <span>...</span>
+            } @else {
+              <span>Tra cứu</span>
+            }
           </button>
         </div>
 
-        <div class="p-3 bg-indigo-950/50 rounded-lg border border-indigo-800 text-xs space-y-1">
-          <div class="flex justify-between text-indigo-300">
-            <span>Số TK:</span>
-            <span class="font-mono text-white font-bold">1029384756</span>
+        @if (lookupError()) {
+          <p class="text-xs text-rose-300 font-medium">{{ lookupError() }}</p>
+        }
+
+        @if (lookedUpAccount(); as acc) {
+          <div class="p-3 bg-indigo-950/60 rounded-lg border border-indigo-800 text-xs space-y-1.5">
+            <div class="flex justify-between text-indigo-300">
+              <span>Số TK:</span>
+              <span class="font-mono text-white font-bold">{{ acc.accountNumber }}</span>
+            </div>
+            <div class="flex justify-between text-indigo-300">
+              <span>Loại TK:</span>
+              <span class="text-amber-300 font-semibold">{{ acc.accountType }}</span>
+            </div>
+            <div class="flex justify-between text-indigo-300">
+              <span>Số dư khả dụng:</span>
+              <span class="font-bold text-amber-400 text-sm font-mono">{{ acc.balance | number }} VND</span>
+            </div>
+            <div class="flex justify-between text-indigo-300">
+              <span>Trạng thái:</span>
+              <span [class]="acc.accountStatus === 'ACTIVE' ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
+                {{ acc.accountStatus }}
+              </span>
+            </div>
+
+            <!-- Phím tắt điền nhanh vào form -->
+            <div class="pt-2 border-t border-indigo-800 flex flex-wrap gap-1.5">
+              @if (activeTab() === 'transfer') {
+                <button 
+                  type="button" 
+                  (click)="fillAccountIntoForm(acc.accountNumber, 'fromAccount')" 
+                  class="text-[10px] bg-indigo-800 hover:bg-indigo-700 px-2 py-0.5 rounded text-indigo-200 cursor-pointer"
+                >
+                  Chọn làm TK nguồn
+                </button>
+                <button 
+                  type="button" 
+                  (click)="fillAccountIntoForm(acc.accountNumber, 'toAccount')" 
+                  class="text-[10px] bg-indigo-800 hover:bg-indigo-700 px-2 py-0.5 rounded text-indigo-200 cursor-pointer"
+                >
+                  Chọn làm TK đích
+                </button>
+              } @else {
+                <button 
+                  type="button" 
+                  (click)="fillAccountIntoForm(acc.accountNumber, 'accountNumber')" 
+                  class="text-[10px] bg-indigo-800 hover:bg-indigo-700 px-2 py-0.5 rounded text-indigo-200 cursor-pointer"
+                >
+                  Điền vào form nạp/rút
+                </button>
+              }
+              <button 
+                type="button" 
+                (click)="filterByAccount(acc.accountNumber)" 
+                class="text-[10px] bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 px-2 py-0.5 rounded cursor-pointer"
+              >
+                Xem lịch sử TK
+              </button>
+            </div>
           </div>
-          <div class="flex justify-between text-indigo-300">
-            <span>Số dư khả dụng:</span>
-            <span class="font-bold text-amber-400 text-sm">45,250,000 VND</span>
-          </div>
-          <div class="flex justify-between text-indigo-300">
-            <span>Trạng thái:</span>
-            <span class="text-emerald-400 font-semibold">ACTIVE</span>
-          </div>
-        </div>
+        }
       </div>
 
     </div>
 
-    <!-- Cột bên phải (2 cols): Bảng Lịch sử Giao dịch (GET /api/transactions/history/{accountNumber}) -->
+    <!-- Cột bên phải (2 cols): Bảng Lịch sử Giao dịch -->
     <div class="lg:col-span-2 space-y-4">
       
       <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
         
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h2 class="text-base font-bold text-slate-800">Lịch sử Giao dịch gần đây</h2>
-            <p class="text-xs text-slate-500">Tương ứng với API: <code>GET /api/transactions/history/&#123;accountNumber&#125;</code></p>
+            <h2 class="text-base font-bold text-slate-800">Lịch sử Giao dịch</h2>
+            <p class="text-xs text-slate-500">
+              @if (accountFilter()) {
+                Đang lọc cho số tài khoản: <span class="font-mono font-bold text-indigo-700">{{ accountFilter() }}</span>
+              } @else {
+                Hiển thị tất cả giao dịch gần đây trong hệ thống
+              }
+            </p>
           </div>
 
-          <div class="flex gap-2">
-            <input type="text" placeholder="Lọc theo Số tài khoản..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            <button class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium">Lọc</button>
+          <div class="flex items-center gap-2">
+            <input 
+              type="text" 
+              [value]="accountFilter()"
+              (input)="accountFilter.set($any($event.target).value)"
+              (keyup.enter)="loadTransactions()"
+              placeholder="Lọc theo Số tài khoản..." 
+              class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+            />
+            <button 
+              (click)="loadTransactions()" 
+              class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium cursor-pointer shadow-sm"
+            >
+              Lọc
+            </button>
+            @if (accountFilter()) {
+              <button 
+                (click)="clearAccountFilter()" 
+                class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium cursor-pointer"
+              >
+                Tất cả
+              </button>
+            }
           </div>
         </div>
 
         <!-- Bảng lịch sử -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs text-slate-600">
-            <thead class="bg-slate-50 uppercase font-semibold text-slate-500 border-b border-slate-200">
-              <tr>
-                <th class="px-4 py-3">Mã GD (RefNo)</th>
-                <th class="px-4 py-3">Loại GD</th>
-                <th class="px-4 py-3">TK Nguồn</th>
-                <th class="px-4 py-3">TK Đích</th>
-                <th class="px-4 py-3">Số tiền</th>
-                <th class="px-4 py-3">Thời gian</th>
-                <th class="px-4 py-3">Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              
-              <!-- GD 1 -->
-              <tr class="hover:bg-slate-50 transition">
-                <td class="px-4 py-3 font-mono font-bold text-indigo-600">TXN-89230192</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold text-[10px]">CHUYỂN KHOẢN</span>
-                </td>
-                <td class="px-4 py-3 font-mono">1029384756</td>
-                <td class="px-4 py-3 font-mono">9988776655</td>
-                <td class="px-4 py-3 font-bold text-rose-600 font-mono">- 2,500,000 VND</td>
-                <td class="px-4 py-3 text-slate-400">27/10/2026 10:15</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">SUCCESS</span>
-                </td>
-              </tr>
-
-              <!-- GD 2 -->
-              <tr class="hover:bg-slate-50 transition">
-                <td class="px-4 py-3 font-mono font-bold text-indigo-600">TXN-77182904</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-[10px]">NẠP TIỀN</span>
-                </td>
-                <td class="px-4 py-3 font-mono text-slate-400">ATM / Quầy</td>
-                <td class="px-4 py-3 font-mono">1029384756</td>
-                <td class="px-4 py-3 font-bold text-emerald-600 font-mono">+ 10,000,000 VND</td>
-                <td class="px-4 py-3 text-slate-400">26/10/2026 16:40</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">SUCCESS</span>
-                </td>
-              </tr>
-
-              <!-- GD 3 -->
-              <tr class="hover:bg-slate-50 transition">
-                <td class="px-4 py-3 font-mono font-bold text-indigo-600">TXN-44910283</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold text-[10px]">RÚT TIỀN</span>
-                </td>
-                <td class="px-4 py-3 font-mono">9988776655</td>
-                <td class="px-4 py-3 font-mono text-slate-400">ATM</td>
-                <td class="px-4 py-3 font-bold text-rose-600 font-mono">- 1,000,000 VND</td>
-                <td class="px-4 py-3 text-slate-400">25/10/2026 09:20</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">SUCCESS</span>
-                </td>
-              </tr>
-
-              <!-- GD 4 (Thất bại) -->
-              <tr class="hover:bg-slate-50 transition">
-                <td class="px-4 py-3 font-mono font-bold text-indigo-600">TXN-11029384</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold text-[10px]">CHUYỂN KHOẢN</span>
-                </td>
-                <td class="px-4 py-3 font-mono">1029384756</td>
-                <td class="px-4 py-3 font-mono">8822334411</td>
-                <td class="px-4 py-3 font-bold text-slate-500 font-mono">50,000,000 VND</td>
-                <td class="px-4 py-3 text-slate-400">24/10/2026 21:05</td>
-                <td class="px-4 py-3">
-                  <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]" title="Vượt quá hạn mức ngày">FAILED</span>
-                </td>
-              </tr>
-
-            </tbody>
-          </table>
-        </div>
+        @if (isLoadingHistory()) {
+          <div class="p-12 text-center text-slate-500">
+            <div class="inline-block animate-spin rounded-full h-7 w-7 border-4 border-indigo-600 border-t-transparent mb-2"></div>
+            <p class="text-xs">Đang tải lịch sử giao dịch...</p>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs text-slate-600">
+              <thead class="bg-slate-50 uppercase font-semibold text-slate-400 border-b border-slate-100">
+                <tr>
+                  <th class="py-3 px-3">Mã GD (RefNo)</th>
+                  <th class="py-3 px-3">Loại</th>
+                  <th class="py-3 px-3">Từ TK / Đến TK</th>
+                  <th class="py-3 px-3">Số tiền</th>
+                  <th class="py-3 px-3">Thời gian</th>
+                  <th class="py-3 px-3 text-right">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (txn of transactions(); track txn.transactionId || txn.refNo) {
+                  <tr 
+                    (click)="openTransactionDetail(txn)"
+                    class="hover:bg-indigo-50/50 transition cursor-pointer"
+                    title="Nhấn để xem chi tiết"
+                  >
+                    <td class="py-3 px-3 font-mono font-bold text-indigo-700">
+                      {{ txn.refNo }}
+                    </td>
+                    <td class="py-3 px-3 font-medium">
+                      @if (txn.tranType === 'TRANSFER') {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">Chuyển tiền</span>
+                      } @else if (txn.tranType === 'DEPOSIT') {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Nạp tiền</span>
+                      } @else {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Rút tiền</span>
+                      }
+                    </td>
+                    <td class="py-3 px-3 font-mono text-slate-700">
+                      <div><span class="text-slate-400">Từ:</span> {{ txn.fromAccount }}</div>
+                      <div><span class="text-slate-400">Đến:</span> {{ txn.toAccount }}</div>
+                    </td>
+                    <td class="py-3 px-3 font-bold font-mono text-slate-900 text-sm">
+                      {{ txn.amount | number }} VND
+                    </td>
+                    <td class="py-3 px-3 text-slate-400">
+                      {{ txn.createAt ? (txn.createAt | date:'dd/MM/yyyy HH:mm:ss') : '—' }}
+                    </td>
+                    <td class="py-3 px-3 text-right">
+                      @if (txn.status === 'SUCCESS') {
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-bold text-[10px]">SUCCESS</span>
+                      } @else {
+                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 rounded font-bold text-[10px]">{{ txn.status }}</span>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="py-8 text-center text-slate-400">
+                      Chưa có giao dịch nào được ghi nhận.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
 
       </div>
 
@@ -183,3 +430,71 @@
   </div>
 
 </div>
+
+<!-- MODAL: CHI TIẾT GIAO DỊCH -->
+@if (selectedTransaction(); as item) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-indigo-900 text-white flex items-center justify-between">
+        <h3 class="text-base font-bold">Chi tiết Giao dịch Ngân hàng</h3>
+        <button (click)="closeTransactionDetail()" class="text-indigo-200 hover:text-white font-bold text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <div class="p-6 space-y-3 text-xs">
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-1">
+          <span class="text-slate-400 uppercase tracking-wider text-[10px] font-bold">Số tiền giao dịch</span>
+          <div class="text-2xl font-bold font-mono text-indigo-700">
+            {{ item.amount | number }} VND
+          </div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold" [class]="item.status === 'SUCCESS' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+            {{ item.status }}
+          </span>
+        </div>
+
+        <div class="divide-y divide-slate-100">
+          <div class="py-2 flex justify-between">
+            <span class="text-slate-500">Mã tham chiếu (RefNo):</span>
+            <span class="font-mono font-bold text-slate-900">{{ item.refNo }}</span>
+          </div>
+
+          <div class="py-2 flex justify-between">
+            <span class="text-slate-500">Loại giao dịch:</span>
+            <span class="font-semibold text-slate-800">{{ item.tranType }}</span>
+          </div>
+
+          <div class="py-2 flex justify-between">
+            <span class="text-slate-500">Tài khoản nguồn:</span>
+            <span class="font-mono font-bold text-slate-900">{{ item.fromAccount }}</span>
+          </div>
+
+          <div class="py-2 flex justify-between">
+            <span class="text-slate-500">Tài khoản đích:</span>
+            <span class="font-mono font-bold text-slate-900">{{ item.toAccount }}</span>
+          </div>
+
+          <div class="py-2 flex justify-between">
+            <span class="text-slate-500">Thời gian tạo:</span>
+            <span class="text-slate-700">{{ item.createAt ? (item.createAt | date:'dd/MM/yyyy HH:mm:ss') : '—' }}</span>
+          </div>
+
+          @if (item.failureReason) {
+            <div class="py-2 flex justify-between">
+              <span class="text-rose-500">Lý do thất bại:</span>
+              <span class="text-rose-700 font-medium">{{ item.failureReason }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end">
+          <button 
+            type="button" 
+            (click)="closeTransactionDetail()"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-xs shadow transition cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

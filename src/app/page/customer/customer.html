@@ -8,14 +8,22 @@
     </div>
     
     <div class="flex items-center gap-3">
-      <button type="button" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm">
+      <button 
+        type="button" 
+        (click)="openAddCustomerModal()"
+        class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm cursor-pointer"
+      >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Thêm khách hàng mới
       </button>
 
-      <button type="button" class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm">
+      <button 
+        type="button" 
+        (click)="openCreateAccountModal()"
+        class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-lg text-sm transition shadow-sm cursor-pointer"
+      >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
         </svg>
@@ -24,14 +32,35 @@
     </div>
   </div>
 
+  <!-- Thông báo trạng thái (Alerts) -->
+  @if (successMessage()) {
+    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2 font-medium">
+        <span>✓</span>
+        <span>{{ successMessage() }}</span>
+      </div>
+      <button (click)="clearAlerts()" class="text-emerald-600 hover:text-emerald-900 font-bold cursor-pointer">&times;</button>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-2 font-medium">
+        <span>⚠</span>
+        <span>{{ errorMessage() }}</span>
+      </div>
+      <button (click)="clearAlerts()" class="text-rose-600 hover:text-rose-900 font-bold cursor-pointer">&times;</button>
+    </div>
+  }
+
   <!-- Thống kê nhanh (Cards) -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
       <div>
         <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Tổng khách hàng</span>
-        <h3 class="text-2xl font-bold text-slate-800 mt-1">1,248</h3>
+        <h3 class="text-2xl font-bold text-slate-800 mt-1">{{ totalCustomers() }}</h3>
       </div>
-      <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+      <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
         👥
       </div>
     </div>
@@ -39,9 +68,9 @@
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
       <div>
         <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Đang hoạt động (ACTIVE)</span>
-        <h3 class="text-2xl font-bold text-emerald-600 mt-1">1,190</h3>
+        <h3 class="text-2xl font-bold text-emerald-600 mt-1">{{ activeCustomersCount() }}</h3>
       </div>
-      <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+      <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
         ✓
       </div>
     </div>
@@ -49,9 +78,9 @@
     <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
       <div>
         <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Bị khóa (LOCKED)</span>
-        <h3 class="text-2xl font-bold text-rose-600 mt-1">58</h3>
+        <h3 class="text-2xl font-bold text-rose-600 mt-1">{{ lockedCustomersCount() }}</h3>
       </div>
-      <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+      <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-lg">
         🔒
       </div>
     </div>
@@ -60,18 +89,35 @@
   <!-- Bộ lọc & Tìm kiếm -->
   <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
     <div class="relative w-full sm:w-96">
-      <input type="text" placeholder="Tìm theo tên, số điện thoại..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+      <input 
+        type="text" 
+        [value]="searchQuery()"
+        (input)="searchQuery.set($any($event.target).value)"
+        placeholder="Tìm theo tên, số điện thoại..." 
+        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+      />
       <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
     </div>
 
     <div class="flex items-center gap-3 w-full sm:w-auto">
-      <select class="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <select 
+        [value]="selectedStatusFilter()"
+        (change)="selectedStatusFilter.set($any($event.target).value)"
+        class="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      >
         <option value="">Tất cả trạng thái</option>
         <option value="ACTIVE">Hoạt động (ACTIVE)</option>
         <option value="LOCKED">Đã khóa (LOCKED)</option>
       </select>
 
-      <button type="button" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">
+      <button 
+        type="button" 
+        (click)="loadCustomers()"
+        class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition cursor-pointer flex items-center gap-1.5"
+      >
+        <svg class="w-4 h-4" [class.animate-spin]="isLoading()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
         Làm mới
       </button>
     </div>
@@ -79,118 +125,387 @@
 
   <!-- Bảng danh sách khách hàng -->
   <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse text-sm text-slate-600">
-        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
-          <tr>
-            <th class="px-6 py-4">ID</th>
-            <th class="px-6 py-4">Họ và tên</th>
-            <th class="px-6 py-4">Số điện thoại</th>
-            <th class="px-6 py-4">Ngày sinh</th>
-            <th class="px-6 py-4">Địa chỉ</th>
-            <th class="px-6 py-4">Số tài khoản</th>
-            <th class="px-6 py-4">Trạng thái</th>
-            <th class="px-6 py-4 text-right">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          
-          <!-- Hàng mẫu 1 -->
-          <tr class="hover:bg-slate-50/80 transition">
-            <td class="px-6 py-4 font-mono font-bold text-slate-900">#1</td>
-            <td class="px-6 py-4 font-medium text-slate-900">Nguyễn Văn An</td>
-            <td class="px-6 py-4 font-mono">0912345678</td>
-            <td class="px-6 py-4">1995-05-15</td>
-            <td class="px-6 py-4 max-w-xs truncate">123 Cầu Giấy, Hà Nội</td>
-            <td class="px-6 py-4">
-              <span class="inline-block px-2 py-1 bg-indigo-50 text-indigo-700 rounded font-mono text-xs font-semibold">
-                1029384756 (1 tài khoản)
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                ACTIVE
-              </span>
-            </td>
-            <td class="px-6 py-4 text-right space-x-2">
-              <button title="Sửa" class="text-indigo-600 hover:text-indigo-900 font-medium">Sửa</button>
-              <button title="Khóa" class="text-rose-600 hover:text-rose-900 font-medium">Khóa</button>
-            </td>
-          </tr>
-
-          <!-- Hàng mẫu 2 -->
-          <tr class="hover:bg-slate-50/80 transition">
-            <td class="px-6 py-4 font-mono font-bold text-slate-900">#2</td>
-            <td class="px-6 py-4 font-medium text-slate-900">Trần Thị Bích</td>
-            <td class="px-6 py-4 font-mono">0987654321</td>
-            <td class="px-6 py-4">1998-10-20</td>
-            <td class="px-6 py-4 max-w-xs truncate">456 Lê Duẩn, Đà Nẵng</td>
-            <td class="px-6 py-4">
-              <span class="inline-block px-2 py-1 bg-indigo-50 text-indigo-700 rounded font-mono text-xs font-semibold">
-                9988776655 (2 tài khoản)
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800 border border-rose-200">
-                LOCKED
-              </span>
-            </td>
-            <td class="px-6 py-4 text-right space-x-2">
-              <button title="Sửa" class="text-indigo-600 hover:text-indigo-900 font-medium">Sửa</button>
-              <button title="Mở khóa" class="text-emerald-600 hover:text-emerald-900 font-medium">Mở khóa</button>
-            </td>
-          </tr>
-
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Phân trang (Pagination) -->
-    <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-      <span>Hiển thị 1 - 2 trong tổng số 1,248 khách hàng</span>
-      <div class="flex gap-1">
-        <button class="px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50 disabled:opacity-50">Trước</button>
-        <button class="px-3 py-1.5 bg-indigo-600 text-white rounded font-medium">1</button>
-        <button class="px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50">2</button>
-        <button class="px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50">3</button>
-        <button class="px-3 py-1.5 border border-slate-300 rounded hover:bg-slate-50">Sau</button>
+    @if (isLoading()) {
+      <div class="p-12 text-center text-slate-500">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent mb-3"></div>
+        <p class="text-sm font-medium">Đang tải dữ liệu khách hàng...</p>
       </div>
-    </div>
-  </div>
-
-  <!-- Form Thêm mới Khách hàng (CustomerRequestDTO) -->
-  <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-    <div class="border-b border-slate-200 pb-4 mb-4">
-      <h2 class="text-lg font-bold text-slate-800">Thêm mới Khách hàng</h2>
-      <p class="text-xs text-slate-500">Tương ứng với API: <code>POST /api/customers</code></p>
-    </div>
-
-    <form class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label for="fullName" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Họ và tên *</label>
-        <input id="fullName" type="text" placeholder="Ví dụ: Nguyễn Văn An" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm text-slate-600">
+          <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
+            <tr>
+              <th class="px-6 py-4">ID</th>
+              <th class="px-6 py-4">Họ và tên</th>
+              <th class="px-6 py-4">Số điện thoại</th>
+              <th class="px-6 py-4">Ngày sinh</th>
+              <th class="px-6 py-4">Địa chỉ</th>
+              <th class="px-6 py-4">Số tài khoản</th>
+              <th class="px-6 py-4">Trạng thái</th>
+              <th class="px-6 py-4 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (customer of filteredCustomers(); track customer.customerId) {
+              <tr class="hover:bg-slate-50/80 transition">
+                <td class="px-6 py-4 font-mono font-bold text-slate-900">#{{ customer.customerId }}</td>
+                <td class="px-6 py-4 font-semibold text-slate-900">
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase">
+                      {{ customer.fullName.substring(0, 2) }}
+                    </div>
+                    <span>{{ customer.fullName }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 font-mono text-slate-700">{{ customer.phoneNumber }}</td>
+                <td class="px-6 py-4 text-slate-500">{{ customer.dateOfBirth || '—' }}</td>
+                <td class="px-6 py-4 text-slate-500 max-w-xs truncate">{{ customer.address || '—' }}</td>
+                <td class="px-6 py-4">
+                  <button 
+                    (click)="viewCustomerAccounts(customer)" 
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                  >
+                    <span>💳 {{ customer.accounts?.length || 0 }} TK</span>
+                  </button>
+                </td>
+                <td class="px-6 py-4">
+                  @if (customer.customerStatus === 'ACTIVE') {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ACTIVE
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> LOCKED
+                    </span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <button 
+                      (click)="openCreateAccountModal(customer)" 
+                      title="Mở tài khoản ngân hàng"
+                      class="px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition cursor-pointer"
+                    >
+                      + Mở TK
+                    </button>
+                    <button 
+                      (click)="openEditCustomerModal(customer)" 
+                      title="Sửa thông tin"
+                      class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+                    >
+                      Sửa
+                    </button>
+                    <button 
+                      (click)="toggleCustomerStatus(customer)" 
+                      [title]="customer.customerStatus === 'ACTIVE' ? 'Khóa khách hàng' : 'Mở khóa khách hàng'"
+                      [class]="customer.customerStatus === 'ACTIVE' ? 'bg-rose-50 text-rose-700 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
+                      class="px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer"
+                    >
+                      {{ customer.customerStatus === 'ACTIVE' ? 'Khóa' : 'Mở khóa' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="px-6 py-10 text-center text-slate-400">
+                  Không tìm thấy khách hàng nào phù hợp với điều kiện tìm kiếm.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-
-      <div>
-        <label for="phoneNumber" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Số điện thoại *</label>
-        <input id="phoneNumber" type="text" placeholder="Ví dụ: 0912345678" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-      </div>
-
-      <div>
-        <label for="dateOfBirth" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Ngày sinh</label>
-        <input id="dateOfBirth" type="date" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-      </div>
-
-      <div>
-        <label for="address" class="block text-xs font-semibold text-slate-700 uppercase mb-1">Địa chỉ cư trú</label>
-        <input id="address" type="text" placeholder="Ví dụ: 123 Cầu Giấy, Hà Nội" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-      </div>
-
-      <div class="md:col-span-2 flex justify-end gap-3 pt-2">
-        <button type="reset" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">Hủy bỏ</button>
-        <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm transition">Lưu khách hàng</button>
-      </div>
-    </form>
+    }
   </div>
 
 </div>
+
+<!-- MODAL: THÊM / SỬA KHÁCH HÀNG -->
+@if (isCustomerModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-indigo-900 text-white flex items-center justify-between">
+        <h3 class="text-base font-bold">
+          {{ isEditingCustomer() ? 'Cập nhật thông tin Khách hàng' : 'Thêm Khách hàng mới' }}
+        </h3>
+        <button (click)="closeCustomerModal()" class="text-indigo-200 hover:text-white font-bold text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <form [formGroup]="customerForm" (ngSubmit)="saveCustomer()" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Họ và tên *</label>
+          <input 
+            type="text" 
+            formControlName="fullName"
+            placeholder="Ví dụ: Nguyễn Văn A"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+          @if (customerForm.get('fullName')?.touched && customerForm.get('fullName')?.invalid) {
+            <span class="text-xs text-rose-600 mt-1 block">Vui lòng nhập họ tên hợp lệ (tối thiểu 2 ký tự).</span>
+          }
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Số điện thoại *</label>
+          <input 
+            type="tel" 
+            formControlName="phoneNumber"
+            placeholder="Ví dụ: 0912345678"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+          @if (customerForm.get('phoneNumber')?.touched && customerForm.get('phoneNumber')?.invalid) {
+            <span class="text-xs text-rose-600 mt-1 block">Số điện thoại không hợp lệ (9 - 11 chữ số).</span>
+          }
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Ngày sinh</label>
+          <input 
+            type="date" 
+            formControlName="dateOfBirth"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Địa chỉ</label>
+          <input 
+            type="text" 
+            formControlName="address"
+            placeholder="Ví dụ: Hà Nội, Việt Nam"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button 
+            type="button" 
+            (click)="closeCustomerModal()"
+            class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition cursor-pointer"
+          >
+            Hủy
+          </button>
+          <button 
+            type="submit"
+            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm shadow transition cursor-pointer"
+          >
+            {{ isEditingCustomer() ? 'Lưu thay đổi' : 'Thêm khách hàng' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MODAL: MỞ TÀI KHOẢN NGÂN HÀNG -->
+@if (isAccountModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-amber-500 text-indigo-950 flex items-center justify-between">
+        <h3 class="text-base font-bold">Mở Tài Khoản Ngân Hàng Mới</h3>
+        <button (click)="closeAccountModal()" class="text-indigo-900 hover:text-black font-bold text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Chủ tài khoản (Khách hàng) *</label>
+          <select 
+            formControlName="customerId"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          >
+            <option [ngValue]="null" disabled>-- Chọn khách hàng --</option>
+            @for (c of customers(); track c.customerId) {
+              <option [value]="c.customerId">{{ c.fullName }} (SĐT: {{ c.phoneNumber }})</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-700 uppercase">Số tài khoản *</label>
+            <button 
+              type="button" 
+              (click)="regenerateAccountNumber()" 
+              class="text-xs text-indigo-600 hover:underline cursor-pointer font-medium"
+            >
+              🔄 Đổi số ngẫu nhiên
+            </button>
+          </div>
+          <input 
+            type="text" 
+            formControlName="accountNumber"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono font-bold text-indigo-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Loại tài khoản *</label>
+          <select 
+            formControlName="accountType"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          >
+            <option value="PAYMENT">Tài khoản Thanh toán (PAYMENT)</option>
+            <option value="SAVING">Tài khoản Tiết kiệm (SAVING)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Hạn mức giao dịch / ngày (VND)</label>
+          <input 
+            type="number" 
+            formControlName="dailyLimit"
+            placeholder="50,000,000"
+            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          />
+        </div>
+
+        @if (accountForm.get('accountType')?.value === 'SAVING') {
+          <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 space-y-3">
+            <span class="text-xs font-bold text-amber-800 uppercase tracking-wider block">Thiết lập tiết kiệm có kỳ hạn</span>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Lãi suất (%/năm)</label>
+                <input 
+                  type="number" 
+                  step="0.1" 
+                  formControlName="interestRate" 
+                  class="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs bg-white font-mono"
+                />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Kỳ hạn (Tháng)</label>
+                <input 
+                  type="number" 
+                  formControlName="termMonths" 
+                  class="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs bg-white font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Ngày đáo hạn</label>
+              <input 
+                type="date" 
+                formControlName="maturityDate" 
+                class="w-full px-2.5 py-1.5 border border-amber-300 rounded-lg text-xs bg-white"
+              />
+            </div>
+          </div>
+        }
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <button 
+            type="button" 
+            (click)="closeAccountModal()"
+            class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition cursor-pointer"
+          >
+            Hủy
+          </button>
+          <button 
+            type="submit"
+            class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg text-sm shadow transition cursor-pointer"
+          >
+            Xác nhận Mở tài khoản
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MODAL: DANH SÁCH TÀI KHOẢN CỦA KHÁCH HÀNG -->
+@if (isAccountsListModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-indigo-900 text-white flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold">Danh sách Tài khoản Ngân hàng</h3>
+          <p class="text-xs text-indigo-200 mt-0.5">
+            Khách hàng: <span class="font-bold text-amber-300">{{ selectedCustomer()?.fullName }}</span> (ID: #{{ selectedCustomer()?.customerId }})
+          </p>
+        </div>
+        <button (click)="closeAccountsListModal()" class="text-indigo-200 hover:text-white font-bold text-lg cursor-pointer">&times;</button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        @if (isLoadingAccounts()) {
+          <div class="p-8 text-center text-slate-500">
+            <div class="inline-block animate-spin rounded-full h-7 w-7 border-4 border-indigo-600 border-t-transparent mb-2"></div>
+            <p class="text-xs">Đang tải danh sách tài khoản...</p>
+          </div>
+        } @else {
+          @if (customerAccounts().length === 0) {
+            <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300 text-slate-500">
+              <p class="text-sm">Khách hàng chưa có tài khoản ngân hàng nào.</p>
+              <button 
+                (click)="closeAccountsListModal(); openCreateAccountModal(selectedCustomer()!)" 
+                class="mt-3 px-4 py-2 bg-amber-500 text-white text-xs font-semibold rounded-lg shadow cursor-pointer hover:bg-amber-600"
+              >
+                + Mở tài khoản ngay
+              </button>
+            </div>
+          } @else {
+            <div class="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
+              @for (acc of customerAccounts(); track acc.accountId) {
+                <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono font-bold text-base text-slate-900">{{ acc.accountNumber }}</span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [class]="acc.accountType === 'PAYMENT' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+                        {{ acc.accountType }}
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-500">
+                      Hạn mức/ngày: <span class="font-mono font-semibold">{{ acc.dailyLimit ? (acc.dailyLimit | number) + ' VND' : 'Không giới hạn' }}</span>
+                    </p>
+                  </div>
+
+                  <div class="flex items-center gap-4">
+                    <div class="text-right">
+                      <span class="text-xs text-slate-400 block">Số dư</span>
+                      <span class="text-base font-bold font-mono text-emerald-600">
+                        {{ acc.balance | number }} VND
+                      </span>
+                    </div>
+
+                    <div class="flex flex-col items-end gap-1">
+                      <span 
+                        class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        [class]="acc.accountStatus === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'"
+                      >
+                        {{ acc.accountStatus }}
+                      </span>
+                      <button 
+                        (click)="toggleAccountStatus(acc)"
+                        class="text-xs underline text-slate-500 hover:text-slate-800 cursor-pointer"
+                      >
+                        {{ acc.accountStatus === 'ACTIVE' ? 'Khóa TK' : 'Mở TK' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <button 
+            type="button" 
+            (click)="closeAccountsListModal(); openCreateAccountModal(selectedCustomer()!)" 
+            class="text-xs text-indigo-600 hover:underline font-semibold cursor-pointer"
+          >
+            + Mở thêm tài khoản cho khách hàng này
+          </button>
+          <button 
+            type="button" 
+            (click)="closeAccountsListModal()"
+            class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition cursor-pointer"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
