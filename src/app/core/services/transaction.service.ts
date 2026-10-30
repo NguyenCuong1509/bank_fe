@@ -22,11 +22,7 @@ export class TransactionService {
   }
 
   transfer(request: TransferRequest): Observable<ApiResponse<TransactionResponse>> {
-    const payload = {
-      ...request,
-      formAccount: request.fromAccount,
-    };
-    return this.http.post<ApiResponse<TransactionResponse>>(`${this.baseUrl}/transfer`, payload);
+    return this.http.post<ApiResponse<TransactionResponse>>(`${this.baseUrl}/transfer`, request);
   }
 
   deposit(request: DepositRequest): Observable<ApiResponse<TransactionResponse>> {
@@ -47,4 +43,3 @@ export class TransactionService {
     return this.http.get<ApiResponse<TransactionResponse>>(`${this.baseUrl}/${refNo}`);
   }
 }
-

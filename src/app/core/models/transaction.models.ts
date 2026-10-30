@@ -15,7 +15,6 @@ export interface TransactionResponse {
 
 export interface TransferRequest {
   fromAccount: string;
-  formAccount?: string;
   toAccount: string;
   amount: number;
 }
@@ -29,4 +28,3 @@ export interface WithdrawRequest {
   accountNumber: string;
   amount: number;
 }
-
